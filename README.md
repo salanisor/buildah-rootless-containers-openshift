@@ -6,43 +6,18 @@ build rootless containers on OpenShift 4.x
 Containerfile
 
 ~~~
-# Reference: https://github.com/redhat-actions/openshift-actions-runners/blob/main/buildah/Containerfile
-ARG BASE_IMG=registry.access.redhat.com/ubi8/ubi
-FROM $BASE_IMG AS buildah-runner
-
-RUN useradd buildah; echo buildah:10000:5000 > /etc/subuid; echo buildah:10000:5000 > /etc/subgid;
-
-# https://github.com/containers/buildah/blob/main/docs/tutorials/05-openshift-rootless-build.md
-# https://github.com/containers/buildah/blob/master/contrib/buildahimage/stable/Dockerfile
-# https://github.com/containers/buildah/issues/1011
-# https://github.com/containers/buildah/issues/3053
+ARG BASE_IMG=quay.io/buildah/stable
+FROM $BASE_IMG
 
 RUN dnf -y update && \
-    dnf -y install xz slirp4netns buildah podman fuse-overlayfs shadow-utils --exclude container-selinux && \
-    dnf -y reinstall shadow-utils && \
     dnf clean all
-
-RUN chgrp -R 0 /etc/containers/ && \
-    chmod -R a+r /etc/containers/ && \
-    chmod -R g+w /etc/containers/
 
 ENV BUILDAH_ISOLATION=chroot
 ENV BUILDAH_LAYERS=true
+ENV STORAGE_DRIVER=vfs
 
-ADD https://raw.githubusercontent.com/containers/buildah/master/contrib/buildahimage/stable/containers.conf /etc/containers/
-
-RUN chgrp -R 0 /etc/containers/ && \
-    chmod -R a+r /etc/containers/ && \
-    chmod -R g+w /etc/containers/
-
-# Use VFS since fuse does not work
-# https://github.com/containers/buildah/blob/master/vendor/github.com/containers/storage/storage.conf
-RUN mkdir -vp /home/buildah/.config/containers && \
-    printf '[storage]\ndriver = "vfs"\n' > /home/buildah/.config/containers/storage.conf && \
-    chown -Rv buildah /home/buildah/.config/
-
-USER buildah
-WORKDIR /home/buildah
+USER build
+WORKDIR /home/build
 ~~~
 
 #### Create a service account which is solely used for image building.
