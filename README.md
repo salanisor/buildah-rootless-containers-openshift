@@ -62,6 +62,10 @@ You need to assign it the ability to run as the standard `anyuid` [SCC](https://
 oc adm policy add-scc-to-user anyuid -z buildah-sa
 ~~~
 
+This will give the container `cap_kill`, `cap_setgid`, and `cap_setuid` capabilities which are extras compared to the restricted SCC. Note that `cap_kill` is dropped by the DeploymentConfig, but the two others are required to execute commands with different user ids as an image is built.
+
+With this in place, when you get the Pod running, its YAML state will contain:
+
 #### Create DeploymentConfig
 
 This is a simple DC just to get the container running.
